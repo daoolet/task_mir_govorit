@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "task-mir-govorit"
+version = "0.1.0"
+description = ""
+authors = ["daoolet-honeywell <daulet.khabidullin@honeywell.com>"]
+readme = "README.md"
+packages = [{include = "task_mir_govorit"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+django = "^5.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
