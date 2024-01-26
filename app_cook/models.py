@@ -7,12 +7,20 @@ class Products(models.Model):
     product_name = models.CharField(max_length=255)
     amount_of_prep = models.IntegerField(default=0)
 
+    class Meta:
+        verbose_name = "Product"
+        verbose_name_plural  = "Products"
+
     def __str__(self):
         return self.product_name
     
 
 class Dishes(models.Model):
     dish_name = models.CharField(max_length=255)
+
+    class Meta:
+        verbose_name = "Dish"
+        verbose_name_plural  = "Dishes"
 
     def __str__(self):
         return self.dish_name
@@ -24,6 +32,8 @@ class Recipes(models.Model):
     weight = models.IntegerField()
 
     class Meta:
+        verbose_name = "Recipe"
+        verbose_name_plural  = "Recipes"
         unique_together = ('product', 'dish')
     
     def __str__(self):
