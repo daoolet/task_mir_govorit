@@ -1,0 +1,26 @@
+openapi: 3.0.3
+info:
+  title: MirGovorit Tesk Task
+  version: 0.0.0
+paths:
+  /cook/:
+    get:
+      operationId: cook_retrieve
+      tags:
+      - cook
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
