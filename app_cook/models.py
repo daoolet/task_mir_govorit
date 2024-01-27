@@ -3,8 +3,8 @@ from django.db import models
 # Create your models here.
 
 
-class Products(models.Model):
-    product_name = models.CharField(max_length=255)
+class Product(models.Model):
+    name = models.CharField(max_length=255)
     amount_of_prep = models.IntegerField(default=0)
 
     class Meta:
@@ -12,29 +12,24 @@ class Products(models.Model):
         verbose_name_plural  = "Products"
 
     def __str__(self):
-        return self.product_name
-    
+        return self.name
 
-class Dishes(models.Model):
-    dish_name = models.CharField(max_length=255)
-
-    class Meta:
-        verbose_name = "Dish"
-        verbose_name_plural  = "Dishes"
-
-    def __str__(self):
-        return self.dish_name
-    
-
-class Recipes(models.Model):
-    product = models.ForeignKey(Products, on_delete=models.CASCADE, related_name="dish_product")
-    dish = models.ForeignKey(Dishes, on_delete=models.CASCADE, related_name="dish_product")
-    weight = models.IntegerField()
+class Recipe(models.Model):
+    name = models.CharField(max_length=255)
+    products = models.ManyToManyField(Product, through="RecipeProduct")
 
     class Meta:
         verbose_name = "Recipe"
         verbose_name_plural  = "Recipes"
-        unique_together = ('product', 'dish')
-    
+
     def __str__(self):
-        return f"Dish: {self.dish.dish_name} contains: {self.product.product_name}"
+        return self.name
+
+class RecipeProduct(models.Model):
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    weight = models.IntegerField()
+
+    class Meta:
+        verbose_name = "RecipeProduct"
+        verbose_name_plural  = "RecipeProducts"
