@@ -6,10 +6,10 @@ from .models import Product, Recipe, RecipeProduct
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ["name"]
+        fields = ["id", "name"]
 
 
 class RecipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
-        fields = ["name"]
+        fields = ["id", "name"]
