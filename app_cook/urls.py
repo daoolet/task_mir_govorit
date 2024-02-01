@@ -11,6 +11,7 @@ urlpatterns = [
     path("recipes/", views.RecipesView.as_view(), name="recipes_view"),
     path("recipes/<int:recipe_id>", views.RecipesDetailView.as_view(), name="recipes_detail_view"),
 
+    path("add_product_to_recipe/<int:recipe_id>/<int:product_id>/<int:weight>/", views.add_product_to_recipe, name="task1"),
 
     path('api/schema/', SpectacularAPIView.as_view(), name="schema"),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name="schema")),
