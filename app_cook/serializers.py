@@ -13,3 +13,9 @@ class RecipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = ["id", "name"]
+
+
+class RecipeProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RecipeProduct
+        fields = ["id", "recipe_id", "product_id", "weight"]
