@@ -33,3 +33,6 @@ class RecipeProduct(models.Model):
     class Meta:
         verbose_name = "RecipeProduct"
         verbose_name_plural  = "RecipeProducts"
+    
+    def __str__(self):
+        return f"This is {self.recipe} with {self.product} - {self.weight}"
