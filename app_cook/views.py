@@ -1,5 +1,5 @@
 from django.shortcuts import render
-
+from django.db.models import F
 
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema
 
 from .models import Product, Recipe, RecipeProduct
-from .serializers import ProductSerializer, RecipeSerializer
+from .serializers import ProductSerializer, RecipeSerializer, RecipeProductSerializer
 from . import utils
 
 
@@ -104,3 +104,25 @@ class RecipesDetailView(APIView):
         recipe.delete()
         return Response({"detail": "Successful"}, status=status.HTTP_200_OK)
     
+
+@api_view(["GET"])
+def add_product_to_recipe(
+        request,
+        recipe_id,
+        product_id,
+        weight
+):
+    current_recipe = Recipe.objects.filter(id=recipe_id)
+    new_product = Product.objects.filter(id=product_id)
+    recipe_product = RecipeProduct.objects.filter(product_id=new_product, recipe_id=current_recipe)
+
+    if current_recipe.exists() and new_product.exists():
+        if recipe_product.exists():
+            object = RecipeProduct.objects.create(product_id=product_id, recipe_id=recipe_id, weight=weight)
+        else:
+            object = RecipeProduct.objects.filter(product=new_product).update(weight=F("weight") + weight)
+
+        serializer = RecipeProductSerializer(object)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    return Response(status=status.HTTP_404_NOT_FOUND)
