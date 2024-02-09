@@ -4,17 +4,11 @@ from django.shortcuts import get_object_or_404
 from .models import Product, Recipe, RecipeProduct
 
 
-def get_all_products():
-    return Product.objects.all()
+def get_all_records(model: models.Model):
+    return model.objects.all()
 
-def get_all_recipes():
-    return Recipe.objects.all()
-
-def product_exists(name: str):
-    return Product.objects.filter(name=name.lower()).exists()
-
-def recipe_exists(name: str):
-    return Recipe.objects.filter(name=name.lower()).exists()
+def record_exists(model: models.Model, name: str):
+    return model.objects.filter(name=name.lower()).exists()
 
 def get_object(model: models.Model, pk: int):
     try:
