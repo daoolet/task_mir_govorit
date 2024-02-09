@@ -23,7 +23,7 @@ class ProductsView(APIView):
     serializer_class = ProductSerializer
 
     def get(self, request):
-        products = utils.get_all_products()
+        products = utils.get_all_records(Product)
         serializer = ProductSerializer(products, many=True)
         return Response(serializer.data, status=status.HTTP_418_IM_A_TEAPOT)
     
@@ -34,13 +34,13 @@ class ProductsView(APIView):
         if serializer.is_valid():
             product_name = serializer.validated_data["name"]
 
-            if utils.product_exists(name=product_name):
+            if utils.record_exists(Product, name=product_name):
                 return Response({"detail": "Already exists"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 product = serializer.save()
                 return Response({
-                    "detail": "Successful",
-                    "product_id": product.id,
+                        "detail": "Successful",
+                        "product_id": product.id,
                     }, status=status.HTTP_200_OK)
             
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -66,7 +66,7 @@ class RecipesView(APIView):
     serializer_class = RecipeSerializer
     
     def get(self, request):
-        recipes = utils.get_all_recipes()
+        recipes = utils.get_all_records(Recipe)
         serializer = RecipeSerializer(recipes, many=True)
         return Response(serializer.data, status=status.HTTP_418_IM_A_TEAPOT)
 
@@ -77,7 +77,7 @@ class RecipesView(APIView):
         if serializer.is_valid():
             recipe_name = serializer.validated_data["name"]
 
-            if utils.recipe_exists(name=recipe_name):
+            if utils.record_exists(Recipe, name=recipe_name):
                 return Response({"detail": "Already exists"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 recipe = serializer.save()
@@ -112,17 +112,42 @@ def add_product_to_recipe(
         product_id,
         weight
 ):
-    current_recipe = Recipe.objects.filter(id=recipe_id)
-    new_product = Product.objects.filter(id=product_id)
-    recipe_product = RecipeProduct.objects.filter(product_id=new_product, recipe_id=current_recipe)
+    try:
+        current_recipe = Recipe.objects.get(id=recipe_id)
+        new_product = Product.objects.get(id=product_id)
 
-    if current_recipe.exists() and new_product.exists():
-        if recipe_product.exists():
-            object = RecipeProduct.objects.create(product_id=product_id, recipe_id=recipe_id, weight=weight)
-        else:
-            object = RecipeProduct.objects.filter(product=new_product).update(weight=F("weight") + weight)
+        recipe_product, created = RecipeProduct.objects.get_or_create(
+            recipe_id=current_recipe.id,
+            product_id=new_product.id,
+            defaults={
+                "weight": weight,
+            }
+        )
 
-        serializer = RecipeProductSerializer(object)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        if not created:
+            recipe_product.weight += weight
+            recipe_product.save()
+
+ 
+        serializer1 = ProductSerializer(new_product)
+        serializer2 = RecipeSerializer(current_recipe)
+        serializer3 = RecipeProductSerializer(recipe_product)
+
+        serializer_list = [serializer1.data, serializer2.data, serializer3.data]
+        content = {
+            "data": serializer_list,
+        }
+
+        return Response(content, status=status.HTTP_200_OK)
     
-    return Response(status=status.HTTP_404_NOT_FOUND)
+    except Recipe.DoesNotExist or Product.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    
+
+class RecipeProductView(APIView):
+    serializer_class = RecipeProductSerializer
+
+    def get(self, request):
+        recipe_products = utils.get_all_records(RecipeProduct)
+        serializer = RecipeProductSerializer(recipe_products, many=True)
+        return Response(serializer.data, status=status.HTTP_418_IM_A_TEAPOT)

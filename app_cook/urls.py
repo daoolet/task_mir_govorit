@@ -10,6 +10,7 @@ urlpatterns = [
     path("products/<int:product_id>", views.ProductsDetialView.as_view(), name="products_detail_view"),
     path("recipes/", views.RecipesView.as_view(), name="recipes_view"),
     path("recipes/<int:recipe_id>", views.RecipesDetailView.as_view(), name="recipes_detail_view"),
+    path("recipe_products/", views.RecipeProductView.as_view(), name="recipe_products_view"),
 
     path("add_product_to_recipe/<int:recipe_id>/<int:product_id>/<int:weight>/", views.add_product_to_recipe, name="task1"),
 
