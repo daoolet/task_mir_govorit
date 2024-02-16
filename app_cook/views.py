@@ -48,14 +48,14 @@ class ProductsView(APIView):
 
 class ProductsDetialView(APIView):
     def get(self, request, product_id):
-        product = utils.get_object(Product, product_id)
+        product = utils.get_object_by_id(Product, id=product_id)
         if product is None:
             return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = ProductSerializer(product)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request, product_id):
-        product = utils.get_object(Product, product_id)
+        product = utils.get_object_by_id(Product, id=product_id)
         if product is None:
             return Response(status=status.HTTP_404_NOT_FOUND)
         product.delete()
@@ -91,14 +91,14 @@ class RecipesView(APIView):
 
 class RecipesDetailView(APIView):
     def get(self, request, recipe_id):
-        recipe = utils.get_object(Recipe, recipe_id)
+        recipe = utils.get_object_by_id(Recipe, id=recipe_id)
         if recipe is None:
             return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = RecipeSerializer(recipe)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     def delete(self, request, recipe_id):
-        recipe = utils.get_object(Recipe, recipe_id)
+        recipe = utils.get_object_by_id(Recipe, id=recipe_id)
         if recipe is None:
             return Response(status=status.HTTP_404_NOT_FOUND)
         recipe.delete()
@@ -151,3 +151,26 @@ class RecipeProductView(APIView):
         recipe_products = utils.get_all_records(RecipeProduct)
         serializer = RecipeProductSerializer(recipe_products, many=True)
         return Response(serializer.data, status=status.HTTP_418_IM_A_TEAPOT)
+    
+
+class RecipeProductDetailView(APIView):
+    def get(self, request, recipe_name: str):
+        try:
+            current_recipe = Recipe.objects.get(name=recipe_name)
+            recipe_product = RecipeProduct.objects.filter(recipe_id=current_recipe.id)
+            serializer = RecipeProductSerializer(recipe_product, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Recipe.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(["DELETE"])
+def delete_product_from_recipe(self, request, recipe_name: str, product_name: str):
+    try:
+        current_recipe = Recipe.objects.get(name=recipe_name)
+        current_product = Product.objects.get(name=product_name)
+        current_recipe_product = RecipeProduct.objects.get(recipe_id=current_recipe.id, product_id=current_product.id)
+        current_recipe_product.delete()
+        return Response({"detail": "Deleted"}, status=status.HTTP_200_OK)
+    except Recipe.DoesNotExist or Product.DoesNotExist or RecipeProduct.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
