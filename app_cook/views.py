@@ -48,16 +48,12 @@ class ProductsView(APIView):
 
 class ProductsDetialView(APIView):
     def get(self, request, product_id):
-        product = utils.get_object_by_id(Product, id=product_id)
-        if product is None:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+        product = utils.get_object_or_404(Product, id=product_id)
         serializer = ProductSerializer(product)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request, product_id):
-        product = utils.get_object_by_id(Product, id=product_id)
-        if product is None:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+        product = utils.get_object_or_404(Product, id=product_id)
         product.delete()
         return Response({"detail": "Successful"}, status=status.HTTP_200_OK)
 
@@ -91,14 +87,14 @@ class RecipesView(APIView):
 
 class RecipesDetailView(APIView):
     def get(self, request, recipe_id):
-        recipe = utils.get_object_by_id(Recipe, id=recipe_id)
+        recipe = utils.get_object_or_404(Recipe, id=recipe_id)
         if recipe is None:
             return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = RecipeSerializer(recipe)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     def delete(self, request, recipe_id):
-        recipe = utils.get_object_by_id(Recipe, id=recipe_id)
+        recipe = utils.get_object_or_404(Recipe, id=recipe_id)
         if recipe is None:
             return Response(status=status.HTTP_404_NOT_FOUND)
         recipe.delete()
@@ -112,39 +108,38 @@ def add_product_to_recipe(
         product_id,
         weight
 ):
-    try:
-        current_recipe = Recipe.objects.get(id=recipe_id)
-        new_product = Product.objects.get(id=product_id)
 
-        recipe_product, created = RecipeProduct.objects.get_or_create(
-            recipe_id=current_recipe.id,
-            product_id=new_product.id,
-            defaults={
-                "weight": weight,
-            }
-        )
+    current_recipe = utils.get_object_or_404(Recipe, id=recipe_id)
+    new_product = utils.get_object_or_404(Product, id=product_id)
 
-        if not created:
-            recipe_product.weight += weight
-            recipe_product.save()
-
- 
-        serializer1 = ProductSerializer(new_product)
-        serializer2 = RecipeSerializer(current_recipe)
-        serializer3 = RecipeProductSerializer(recipe_product)
-
-        serializer_list = [serializer1.data, serializer2.data, serializer3.data]
-        content = {
-            "data": serializer_list,
+    recipe_product, created = RecipeProduct.objects.get_or_create(
+        recipe_id=current_recipe.id,
+        product_id=new_product.id,
+        defaults={
+            "weight": weight,
         }
+    )
 
-        return Response(content, status=status.HTTP_200_OK)
-    
-    except Recipe.DoesNotExist or Product.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-    
+    if not created:
+        recipe_product.weight += weight
+        recipe_product.save()
 
-class RecipeProductView(APIView):
+
+    serializer1 = ProductSerializer(new_product)
+    serializer2 = RecipeSerializer(current_recipe)
+    serializer3 = RecipeProductSerializer(recipe_product)
+
+    # serializer_list = [serializer1.data, serializer2.data, serializer3.data]
+    content = {
+        "product": serializer1.data,
+        "recipe": serializer2.data,
+        "recipe_product": serializer3.data,
+    }
+
+    return Response(content, status=status.HTTP_200_OK)
+
+
+class RecipeProductsView(APIView):
     serializer_class = RecipeProductSerializer
 
     def get(self, request):
@@ -153,7 +148,7 @@ class RecipeProductView(APIView):
         return Response(serializer.data, status=status.HTTP_418_IM_A_TEAPOT)
     
 
-class RecipeProductDetailView(APIView):
+class RecipeProductsDetailView(APIView):
     def get(self, request, recipe_name: str):
         try:
             current_recipe = Recipe.objects.get(name=recipe_name)
