@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.db.models import F
+from django.db.models import F, Count, Q
 
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -47,12 +47,12 @@ class ProductsView(APIView):
     
 
 class ProductsDetialView(APIView):
-    def get(self, request, product_id):
+    def get(self, request, product_id: int):
         product = utils.get_object_or_404(Product, id=product_id)
         serializer = ProductSerializer(product)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def delete(self, request, product_id):
+    def delete(self, request, product_id: int):
         product = utils.get_object_or_404(Product, id=product_id)
         product.delete()
         return Response({"detail": "Successful"}, status=status.HTTP_200_OK)
@@ -86,14 +86,14 @@ class RecipesView(APIView):
     
 
 class RecipesDetailView(APIView):
-    def get(self, request, recipe_id):
+    def get(self, request, recipe_id: int):
         recipe = utils.get_object_or_404(Recipe, id=recipe_id)
         if recipe is None:
             return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = RecipeSerializer(recipe)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
-    def delete(self, request, recipe_id):
+    def delete(self, request, recipe_id: int):
         recipe = utils.get_object_or_404(Recipe, id=recipe_id)
         if recipe is None:
             return Response(status=status.HTTP_404_NOT_FOUND)
@@ -101,12 +101,44 @@ class RecipesDetailView(APIView):
         return Response({"detail": "Successful"}, status=status.HTTP_200_OK)
     
 
+class RecipeProductsView(APIView):
+    serializer_class = RecipeProductSerializer
+
+    def get(self, request):
+        recipe_products = utils.get_all_records(RecipeProduct)
+        serializer = RecipeProductSerializer(recipe_products, many=True)
+        return Response(serializer.data, status=status.HTTP_418_IM_A_TEAPOT)
+    
+
+class RecipeProductsDetailView(APIView):
+    def get(self, request, recipe_name: str):
+        try:
+            current_recipe = Recipe.objects.get(name=recipe_name)
+            recipe_product = RecipeProduct.objects.filter(recipe_id=current_recipe.id)
+            serializer = RecipeProductSerializer(recipe_product, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Recipe.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(["DELETE"])
+def delete_product_from_recipe(self, request, recipe_name: str, product_name: str):
+    try:
+        current_recipe = Recipe.objects.get(name=recipe_name)
+        current_product = Product.objects.get(name=product_name)
+        current_recipe_product = RecipeProduct.objects.get(recipe_id=current_recipe.id, product_id=current_product.id)
+        current_recipe_product.delete()
+        return Response({"detail": "Deleted"}, status=status.HTTP_200_OK)
+    except Recipe.DoesNotExist or Product.DoesNotExist or RecipeProduct.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    
+    
 @api_view(["GET"])
 def add_product_to_recipe(
         request,
-        recipe_id,
-        product_id,
-        weight
+        recipe_id: int,
+        product_id: int,
+        weight: int | float
 ):
 
     current_recipe = utils.get_object_or_404(Recipe, id=recipe_id)
@@ -139,33 +171,52 @@ def add_product_to_recipe(
     return Response(content, status=status.HTTP_200_OK)
 
 
-class RecipeProductsView(APIView):
-    serializer_class = RecipeProductSerializer
+@api_view(["GET"])
+def cook_recipe(request, recipe_id: int):
+    recipe = utils.get_object_or_404(Recipe, id=recipe_id)
+    recipe_product = RecipeProduct.objects.filter(recipe_id=recipe.id)
 
-    def get(self, request):
-        recipe_products = utils.get_all_records(RecipeProduct)
-        serializer = RecipeProductSerializer(recipe_products, many=True)
-        return Response(serializer.data, status=status.HTTP_418_IM_A_TEAPOT)
-    
-
-class RecipeProductsDetailView(APIView):
-    def get(self, request, recipe_name: str):
-        try:
-            current_recipe = Recipe.objects.get(name=recipe_name)
-            recipe_product = RecipeProduct.objects.filter(recipe_id=current_recipe.id)
-            serializer = RecipeProductSerializer(recipe_product, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except Recipe.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
-
-@api_view(["DELETE"])
-def delete_product_from_recipe(self, request, recipe_name: str, product_name: str):
-    try:
-        current_recipe = Recipe.objects.get(name=recipe_name)
-        current_product = Product.objects.get(name=product_name)
-        current_recipe_product = RecipeProduct.objects.get(recipe_id=current_recipe.id, product_id=current_product.id)
-        current_recipe_product.delete()
-        return Response({"detail": "Deleted"}, status=status.HTTP_200_OK)
-    except Recipe.DoesNotExist or Product.DoesNotExist or RecipeProduct.DoesNotExist:
+    if not recipe_product.exists():
         return Response(status=status.HTTP_404_NOT_FOUND)
+    
+    all_products = recipe_product.last().recipe.products.all()
+    for product in all_products:
+        Product.objects.filter(name=product).update(amount_of_prep=F("amount_of_prep") + 1)
+
+    serializer1 = ProductSerializer(all_products, many=True)
+    return Response(serializer1.data, status=status.HTTP_200_OK)
+
+
+def show_recipes_without_product(request, product_id: int):
+    try:
+        current_product = Product.objects.get(id=product_id)
+        recipe_product_ids = list(RecipeProduct.objects.values_list("recipe_id", flat=True).distinct())
+
+        kucha = {Recipe.objects.get(id=id): RecipeProduct.objects.filter(recipe_id=id).last().recipe.products.all() for id in recipe_product_ids}
+
+        recipes_without_product = []
+
+        for rec, prod in kucha.items():
+            if current_product not in prod:
+                recipes_without_product.append(rec)
+
+        recipes_low_weight = []
+        LOW_WEIGHT = 10
+        
+        recipes_with_product = RecipeProduct.objects.filter(product_id=current_product.id)
+        for item in recipes_with_product:
+            if item.weight < LOW_WEIGHT:
+                recipes_low_weight.append(item.recipe)
+
+        content = {
+            "recipes_without_product": recipes_without_product,
+            "recipes_low_weight": recipes_low_weight,
+            "current_product": current_product,
+        }
+        return render(request, "app_cook/index.html", content)
+    
+    except Product.DoesNotExist:
+        content = {
+            "message": "Product does not exist in Products list" 
+        }
+        return render(request, "app_cook/index.html", content)

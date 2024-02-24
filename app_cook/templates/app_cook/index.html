@@ -3,9 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cook book</title>
+    <title>Cook book - Task3</title>
 </head>
 <body>
-    <h1>{{ hello }}</h1>
+    {% if message %}
+        <h2 style="color: red;"> {{ message }} </h2>
+    {% else %}
+        <h2>Product - {{ current_product }}</h2>
+    {% endif %}
+
+    <h1>Recipes without {{ product }}</h1>
+    {% if recipes_without_product %}
+    <table>
+        <tr>
+            <th>Id</th>
+            <th>Recipe name</th>
+        </tr>
+        {% for i in recipes_without_product %}
+            <tr>
+                <td>{{ i.id }}</td>
+                <td>{{ i.name }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+        <h2>No recipes</h2>
+    {% endif %}
+
+    <h1>Recipes with low weight</h1>
+    {% if recipes_low_weight %}
+    <table>
+        <tr>
+            <th>Id</th>
+            <th>Recipe name</th>
+        </tr>
+        {% for i in recipes_low_weight %}
+            <tr>
+                <td>{{ i.id }}</td>
+                <td>{{ i.name }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+        <h2>No recipes</h2>
+    {% endif %}
+
+    
 </body>
 </html>
