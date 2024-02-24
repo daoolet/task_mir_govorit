@@ -6,7 +6,7 @@ from .models import Product, Recipe, RecipeProduct
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ("id", "name")
+        fields = "__all__"
 
 
 class RecipeSerializer(serializers.ModelSerializer):

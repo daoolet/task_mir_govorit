@@ -1,8 +1,6 @@
 from django.db import models
 from django.shortcuts import get_object_or_404
 
-from .models import Product, Recipe, RecipeProduct
-
 
 def get_all_records(model: models.Model):
     return model.objects.all()

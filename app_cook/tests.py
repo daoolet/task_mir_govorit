@@ -117,3 +117,36 @@ class RecipeProductTest(TestCase):
 
         print(rp2, object)
 
+
+class CookRecipeTest(TestCase):
+    def setUp(self):
+        Product.objects.create(name="milk")
+        Product.objects.create(name="sugar")
+        Product.objects.create(name="butter")
+
+        Recipe.objects.create(name="syrniki")
+        Recipe.objects.create(name="bliny")
+        Recipe.objects.create(name="tort")
+
+        p1 = Product.objects.get(name="milk")
+        p2 = Product.objects.get(name="sugar")
+        r1 = Recipe.objects.get(name="bliny")
+
+        WEIGHT = 100
+
+        # bliny - milk, sugar
+        RecipeProduct.objects.create(recipe_id=r1.id, product_id=p1.id, weight=WEIGHT)
+        RecipeProduct.objects.create(recipe_id=r1.id, product_id=p2.id, weight=WEIGHT+50)
+    
+    def test_task2(self):
+        recipe_instance = Recipe.objects.get(id=2)
+        self.assertEqual(recipe_instance.name, "bliny")
+
+        rp = RecipeProduct.objects.filter(recipe_id=recipe_instance.id).last()
+        print("*****TASK2*****")
+        all_products = rp.recipe.products.all()
+        for i in all_products:
+            print(f"before {i} : {Product.objects.get(name=i).amount_of_prep}")
+            print(f"after {i} : {Product.objects.filter(name=i).update(amount_of_prep=F("amount_of_prep") + 1)}")
+
+
